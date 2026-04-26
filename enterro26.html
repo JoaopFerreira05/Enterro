@@ -1,0 +1,834 @@
+
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#090412;--surface:#140b25;--card:#1b1233;--accent:#6d5dfc;--accent2:#ffd84d;
+  --accent3:#36d39a;--accent4:#ff5fa2;--text:#f3eeff;--muted:#9d90c7;--border:rgba(167,139,250,0.22);--r:8px;
+}
+body{font-family:'DM Sans',system-ui,sans-serif;background:
+  radial-gradient(circle at top,rgba(109,93,252,0.18),transparent 30%),
+  radial-gradient(circle at 20% 20%,rgba(54,211,154,0.08),transparent 18%),
+  radial-gradient(circle at 80% 15%,rgba(255,95,162,0.1),transparent 20%),
+  linear-gradient(180deg,#06030d 0%,#0c0820 38%,#120a25 100%);
+  color:var(--text);min-height:100vh;overscroll-behavior:none}
+body.modal-open{overflow:hidden}
+.app{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}
+.topbar{background:rgba(10,7,22,0.9);border-bottom:1px solid var(--border);padding:calc(10px + env(safe-area-inset-top)) 16px 10px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;backdrop-filter:blur(10px);position:sticky;top:0;z-index:30}
+.logo{font-size:22px;font-weight:800;letter-spacing:2px;color:#fff}
+.logo span{color:var(--accent2)}
+.global-shots{background:rgba(255,216,77,0.12);border:1px solid rgba(255,216,77,0.35);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;color:var(--accent2)}
+.tabs{display:flex;background:rgba(10,7,22,0.78);border-bottom:1px solid var(--border);flex-shrink:0;backdrop-filter:blur(10px);position:sticky;top:57px;z-index:29}
+.tab{flex:1;min-height:44px;padding:12px 8px;font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;text-align:center;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:all 0.2s}
+.tab.active{color:var(--accent2);border-bottom-color:var(--accent2)}
+.view{display:none;flex-direction:column;flex:1;min-height:0}
+.view.active{display:flex}
+.map-wrap{padding:12px;display:flex;justify-content:center;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+.map{background:linear-gradient(180deg,rgba(27,18,51,0.98),rgba(20,11,37,0.96));border:1px solid var(--border);border-radius:12px;padding:12px 8px;width:100%;max-width:440px;position:relative;box-shadow:0 24px 60px rgba(0,0,0,0.35)}
+.map-title{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);text-align:center;margin-bottom:10px}
+.map-tools{display:flex;flex-direction:column;gap:10px;margin-bottom:12px}
+.map-filters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.filter-btn{background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px;color:var(--muted);font:inherit;font-size:11px;font-weight:600;padding:8px 4px;cursor:pointer;transition:all .18s}
+.filter-btn:hover{color:var(--text);border-color:rgba(255,216,77,0.28)}
+.filter-btn.active{background:rgba(255,216,77,0.1);border-color:rgba(255,216,77,0.38);color:var(--accent2)}
+.map-body{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;align-items:stretch;position:relative;z-index:1}
+.bslot{width:100%;min-height:44px;background:linear-gradient(180deg,rgba(38,26,70,0.95),rgba(23,16,43,0.95));border:1px solid rgba(109,93,252,0.32);border-radius:6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:9px;font-weight:600;letter-spacing:0.5px;color:#d9d2ff;transition:all 0.18s;position:relative;text-align:center;padding:2px}
+.bslot:hover{background:linear-gradient(180deg,rgba(49,35,93,1),rgba(31,21,58,1));border-color:var(--accent2);color:var(--accent2)}
+.bslot.has-shots{border-color:rgba(255,216,77,0.55);background:linear-gradient(180deg,rgba(48,35,85,0.98),rgba(27,18,51,0.98))}
+.bslot .dot{width:6px;height:6px;border-radius:50%;background:var(--accent3);position:absolute;top:4px;right:4px;box-shadow:0 0 10px rgba(54,211,154,0.6)}
+.bslot .note-dot{width:6px;height:6px;border-radius:50%;background:var(--accent4);position:absolute;top:4px;left:4px;box-shadow:0 0 10px rgba(255,95,162,0.55)}
+.bslot .brinde-dot{width:6px;height:6px;border-radius:2px;background:var(--accent2);position:absolute;bottom:4px;right:4px;box-shadow:0 0 8px rgba(255,216,77,0.5)}
+.bslot .scount{font-size:11px;font-weight:700;color:var(--accent2);line-height:1}
+.bslot.is-dim{opacity:.28;filter:saturate(.7)}
+.grid-block{width:100%;min-height:44px;border-radius:6px;display:flex;align-items:center;justify-content:center;text-align:center;padding:6px;font-size:9px;letter-spacing:1px;line-height:1.2}
+.grid-block.stage{background:linear-gradient(90deg,rgba(109,93,252,0.28),rgba(255,95,162,0.18));border:1px solid rgba(167,139,250,0.45);font-size:11px;font-weight:700;color:#f1e8ff}
+.grid-block.backstage{min-height:94px;background:linear-gradient(180deg,rgba(109,93,252,0.18),rgba(54,211,154,0.08));border:1px solid rgba(109,93,252,0.35);color:#d7d8ff;font-weight:700}
+.grid-block.posto{background:rgba(255,216,77,0.08);border:1px dashed rgba(255,216,77,0.4);color:#ffe38a;font-weight:700}
+.grid-space,.grid-empty{min-height:44px;border-radius:6px;border:1px dashed rgba(167,139,250,0.1)}
+.grid-space{background:rgba(255,255,255,0.03)}
+.grid-empty{background:rgba(255,255,255,0.03)}
+.grid-corridor{border-radius:8px;background:linear-gradient(180deg,rgba(58,38,104,0.58),rgba(36,22,72,0.64));pointer-events:none}
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:100;align-items:flex-end;justify-content:center;padding-top:max(12px,env(safe-area-inset-top));padding-bottom:env(safe-area-inset-bottom)}
+.modal-overlay.open{display:flex}
+.modal{background:linear-gradient(180deg,rgba(27,18,51,0.99),rgba(20,11,37,0.99));border-top-left-radius:20px;border-top-right-radius:20px;width:100%;max-width:480px;max-height:min(92vh,92dvh);overflow-y:auto;border-top:1px solid var(--border);box-shadow:0 -10px 40px rgba(0,0,0,0.4);scroll-padding-top:88px}
+.modal-header{padding:12px 16px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);position:sticky;top:0;background:rgba(20,11,37,0.97);z-index:3;backdrop-filter:blur(10px)}
+.modal-title{font-size:18px;font-weight:700;color:#fff}
+.modal-sub{font-size:12px;color:var(--muted);margin-top:2px}
+.close-btn{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.08);border:none;color:var(--text);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.modal-nav{display:flex;align-items:center;gap:8px;position:sticky;top:62px;z-index:2;padding:10px 16px;background:rgba(20,11,37,0.95);border-bottom:1px solid rgba(255,255,255,0.06);backdrop-filter:blur(10px)}
+.modal-nav-btn{flex:1;min-height:40px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,0.05);color:var(--text);font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.modal-nav-btn:active{transform:scale(.98)}
+.modal-nav-center{font-size:11px;color:var(--muted);padding:0 4px;white-space:nowrap}
+.modal-body{padding:14px 16px calc(26px + env(safe-area-inset-bottom))}
+.sec-label{font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin:16px 0 8px;display:flex;align-items:center;gap:8px}
+.sec-label::after{content:'';flex:1;height:1px;background:var(--border)}
+/* Fotos */
+.photos-row{display:block}
+.photo-carousel{background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.photo-stage{position:relative;aspect-ratio:4/5;background:rgba(7,4,16,0.9)}
+.photo-stage img{width:100%;height:100%;object-fit:contain;display:block}
+.photo-nav{position:absolute;top:50%;transform:translateY(-50%);width:34px;height:34px;border:none;border-radius:50%;background:rgba(8,6,18,0.78);color:#fff;font-size:22px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:1}
+.photo-nav:hover{background:rgba(255,216,77,0.2);color:var(--accent2)}
+.photo-nav.prev{left:10px}
+.photo-nav.next{right:10px}
+.photo-strip{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-top:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.03)}
+.photo-counter{font-size:12px;font-weight:600;color:var(--text)}
+.photo-dots{display:flex;align-items:center;gap:6px;overflow-x:auto;padding-bottom:2px}
+.photo-dot{width:8px;height:8px;border:none;border-radius:999px;background:rgba(255,255,255,0.2);cursor:pointer;flex:0 0 auto}
+.photo-dot.active{width:22px;background:var(--accent2)}
+.photo-empty{width:100%;padding:14px 12px;border:1px dashed rgba(255,255,255,0.1);border-radius:8px;background:rgba(255,255,255,0.03);font-size:12px;color:var(--muted);text-align:center}
+/* Shots */
+.shot-row{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:6px}
+.shot-name{flex:1;font-size:13px;font-weight:500}
+.shot-cnt{font-size:22px;font-weight:700;color:var(--accent2);min-width:28px;text-align:center;line-height:1}
+.cbtn{width:28px;height:28px;border-radius:6px;border:none;cursor:pointer;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;transition:all 0.15s;flex-shrink:0}
+.cbtn.m{background:rgba(255,255,255,0.06);color:var(--muted)}
+.cbtn.m:hover{background:rgba(255,255,255,0.12);color:var(--text)}
+.cbtn.p{background:var(--accent);color:#fff}
+.cbtn.p:hover{background:#7d70ff}
+.cbtn:active{transform:scale(0.92)}
+.card-total-bar{display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+.card-total-bar .lbl{font-size:11px;color:var(--muted)}
+.card-total-bar .num{font-size:26px;font-weight:700;color:var(--accent2);line-height:1}
+.rst-btn{background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;text-decoration:underline}
+.rst-btn:hover{color:#ff3c6f}
+/* Total bloco separado */
+.total-block{background:rgba(255,216,77,0.06);border:1px solid rgba(255,216,77,0.2);border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
+.total-block .lbl{font-size:12px;color:var(--muted)}
+.total-block .num{font-size:28px;font-weight:700;color:var(--accent2);line-height:1}
+/* Insta — só leitura, definido pelo programador */
+.insta-block{background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.insta-handle{font-size:14px;font-weight:600;color:var(--text)}
+.insta-link{display:inline-flex;align-items:center;gap:6px;background:rgba(54,211,154,0.1);border:1px solid rgba(54,211,154,0.3);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;color:var(--accent3);text-decoration:none;transition:all .15s;flex-shrink:0}
+.insta-link:hover{background:rgba(54,211,154,0.2);border-color:rgba(54,211,154,0.5)}
+/* Brinde */
+.brinde-row{display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;padding:12px 16px}
+.brinde-info .brinde-label{font-size:13px;font-weight:600;color:var(--text)}
+.brinde-info .brinde-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.brinde-badge{display:inline-flex;align-items:center;gap:4px;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700}
+.brinde-badge.yes{background:rgba(255,216,77,0.12);border:1px solid rgba(255,216,77,0.35);color:var(--accent2)}
+.brinde-badge.no{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:var(--muted)}
+/* Notas do programador */
+.dev-notes-block{background:rgba(109,93,252,0.08);border:1px solid rgba(109,93,252,0.25);border-radius:10px;padding:12px 16px;font-size:13px;line-height:1.6;color:#d9d2ff;white-space:pre-wrap}
+/* Notas do utilizador */
+.notes-input{width:100%;min-height:160px;resize:vertical;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--text);font:inherit;outline:none}
+.notes-input:focus{border-color:rgba(255,216,77,0.45);box-shadow:0 0 0 3px rgba(255,216,77,0.08)}
+.notes-meta{margin-top:6px;font-size:11px;color:var(--muted)}
+/* Bebidas */
+.bebidas-view{padding:12px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.beb-section{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.beb-header{padding:14px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)}
+.beb-icon{font-size:22px}
+.beb-title{font-size:15px;font-weight:700;color:#fff}
+.beb-sub{font-size:11px;color:var(--muted)}
+.beb-body{padding:12px 16px}
+.beb-item-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)}
+.beb-item-row:last-child{border-bottom:none}
+.beb-item-name{flex:1;font-size:13px;font-weight:500}
+.beb-item-cnt{font-size:22px;font-weight:700;color:var(--accent3);min-width:28px;text-align:center;line-height:1}
+.cbtn.pg{background:#1a7d66;color:#fff}
+.cbtn.pg:hover{background:#1e9478}
+.beb-total{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;background:rgba(255,255,255,0.03);border-top:1px solid var(--border)}
+.beb-total .lbl{font-size:11px;color:var(--muted)}
+.beb-total .num{font-size:20px;font-weight:700;color:var(--accent3)}
+/* Sumário */
+.summ-view{padding:12px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.summ-global{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px;display:flex;gap:12px}
+.summ-stat{flex:1;text-align:center}
+.summ-stat .n{font-size:32px;font-weight:700;color:var(--accent2);line-height:1}
+.summ-stat .l{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:4px}
+.summ-barraca{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px}
+.summ-barraca .name{flex:1;font-size:13px;font-weight:600}
+.summ-barraca .cnt{font-size:18px;font-weight:700;color:var(--accent2)}
+.summ-barraca .bar{height:4px;background:rgba(255,255,255,0.08);border-radius:2px;margin-top:4px;overflow:hidden}
+.summ-barraca .bar-fill{height:100%;background:var(--accent2);border-radius:2px;transition:width 0.4s}
+.summ-beb{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px}
+.summ-beb-title{font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.summ-beb-row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0}
+.summ-beb-row span:last-child{font-weight:600;color:var(--accent3)}
+.reset-all{width:100%;margin-top:8px;background:rgba(255,60,111,0.1);border:1px solid rgba(255,60,111,0.25);color:#ff3c6f;font-size:13px;font-weight:600;padding:12px;border-radius:10px;cursor:pointer}
+.reset-all:hover{background:rgba(255,60,111,0.2)}
+
+@media (max-width:640px){
+  .logo{font-size:18px;letter-spacing:1.4px}
+  .global-shots{font-size:11px;padding:4px 10px}
+  .tabs{top:54px}
+  .tab{font-size:11px;padding:11px 6px}
+  .map{max-width:none;border-radius:14px}
+  .map-title{font-size:10px;margin-bottom:8px}
+  .map-filters{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .filter-btn{min-height:40px;font-size:11px}
+  .map-body{gap:4px}
+  .bslot,.grid-block,.grid-space,.grid-empty{min-height:42px}
+  .bslot{font-size:8px;padding:3px 2px}
+  .bslot .scount{font-size:10px}
+  .modal{max-width:none;border-top-left-radius:18px;border-top-right-radius:18px;max-height:100dvh}
+  .modal-title{font-size:16px}
+  .modal-sub{font-size:11px}
+  .modal-nav{top:55px;padding:8px 12px}
+  .modal-nav-btn{min-height:38px;font-size:11px}
+  .shot-row,.beb-item-row,.brinde-row,.insta-block{padding-left:10px;padding-right:10px}
+  .notes-input{min-height:132px}
+  .summ-global{padding:12px;gap:8px}
+  .summ-stat .n{font-size:26px}
+}
+</style>
+
+<div class="app">
+  <div class="topbar">
+    <div class="logo">ENTERRO <span>'26</span></div>
+    <div class="global-shots" id="g-shots">0 shots</div>
+  </div>
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('mapa')">Mapa</div>
+    <div class="tab" onclick="switchTab('bebidas')">Outros</div>
+    <div class="tab" onclick="switchTab('sumario')">Resumo</div>
+  </div>
+  <div class="view active" id="view-mapa">
+    <div class="map-wrap">
+      <div class="map">
+        <div class="map-title">Mapa do Recinto</div>
+        <div class="map-tools"><div class="map-filters" id="map-filters"></div></div>
+        <div class="map-body" id="map-grid"></div>
+      </div>
+    </div>
+  </div>
+  <div class="view" id="view-bebidas"><div class="bebidas-view" id="bebidas-content"></div></div>
+  <div class="view" id="view-sumario"><div class="summ-view" id="sumario-content"></div></div>
+</div>
+
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="m-title"></div>
+        <div class="modal-sub" id="m-sub"></div>
+      </div>
+      <button class="close-btn" onclick="closeModalDirect()">X</button>
+    </div>
+    <div class="modal-body" id="m-body"></div>
+  </div>
+</div>
+<script>
+const DEFAULT_SHOTS=['Shot A','Shot B'];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CONFIGURAÇÃO DAS BARRACAS — editável pelo programador
+// Cada barraca pode ter:
+//   insta:      handle do instagram (sem @). Aparece como link na aba.
+//               Para alterar o link, muda a string aqui.
+//   brinde:     true/false — se a barraca tem cartão de brindes.
+//   devNotes:   notas do programador. Se vazia (''), a secção não aparece.
+//               Usa \n para quebras de linha.
+// ─────────────────────────────────────────────────────────────────────────────
+const BARRACA_CONFIG={
+  // MODIFICAR AQUI: para cada barraca, muda insta, brinde e devNotes conforme necessário
+  b301: { insta:'barraquinha_nemtc',   brinde:false, devNotes:'Tem shot com chupa' },
+  b306: { insta:'barraska_nebec',   brinde:false, devNotes:'Tem shot com o pirilampo (pauzinho de café que brilha)' },
+  b401: { insta:'nedesignaauav',     brinde:true, devNotes:'O cartão de brindes só serve para a t-shirt (não compensa 28 shots)\nTem bolas antistress com desafio e foto polaroid por 5 shots' },
+  b406: { insta:'barraca.naeisca', brinde:false, devNotes:'Todos os shots veem ou com um sticker ou com um chupa\nTem um sombrero por 10 shots (não sei se tem cartão)' },
+  b701: { insta:'barraca_nelre',   brinde:false, devNotes:'' },
+  b706: { insta:'neebaauav',    brinde:false, devNotes:'' },
+  b801: { insta:'neequaauav',   brinde:true, devNotes:'O cartão é para o chapéu de pato mas n sei quantos shots' },
+  b806: { insta:'barracaneeeta',   brinde:false, devNotes:'Não publicaram o menu de shots' },
+  b1101:{ insta:'barraquinha.nae.essua',brinde:false, devNotes:'Não tem menu de shots nem brindes publicados' },
+  b1106:{ insta:'aegia_ua',   brinde:false, devNotes:'Não tem brindes publicados' },
+  b1201:{ insta:'barraca_ect',   brinde:false, devNotes:'Não tem menu de shots nem brindes publicados' },
+  b1203:{ insta:'barraca_neap',    brinde:true, devNotes:'Se escolheres o porta chaves no cartão não consegues a camisola por 14 shots\nEsta é para sair com a camisola' },
+  b1204:{ insta:'necib_aauav',   brinde:true, devNotes:'A camisola é 15 shots (fácil)\nTem um chapéu de piloto por 6 shots e um lenço de hospedeira por 5' },
+  b1206:{ insta:'neg_aauav',     brinde:false, devNotes:'Uma das melhores barracas (Ver os destaques do enterro no insta)\nNão menu de shots\nTem camisola por 6 shots e a máscara do spiderman (rafada) por 9 shots' },
+  b1303:{ insta:'barraca_neea',    brinde:false, devNotes:'A camisola é leilão não vale a pena' },
+  b1304:{ insta:'barraca_neef',    brinde:false, devNotes:'A tshirt está do crl (tem um melhor cartaz do que o enterro)\nA barraca tem desafios diários\nNão tenho a certeza se tem cartão' },
+  b1501:{ insta:'barraca_neemec',  brinde:false, devNotes:'' },
+  b1506:{ insta:'nrock__barraca',   brinde:true, devNotes:'O cartão é 13 shots para umas meias que parecem até boas' },
+  b1601:{ insta:'barraca_negpt',   brinde:true, devNotes:'O avental é o único que dá com o cartão e são 12 shots' },
+  b1606:{ insta:'barraca_neq',     brinde:true, devNotes:'Uma das melhores barracas, brindes 5 estrelas (chapéu, meias, cavalos insufláveis e t-shirts diferentes)\nO problema é que a camisola é 20 shots' },
+  b1901:{ insta:'barraca_neb',     brinde:false, devNotes:'Não sei se tem cartão' },
+  b1906:{ insta:'barraca.psicologia', brinde:true, devNotes:'Melhor barraca do enterro\nAqui joga-se para a camisola 14 shots (à varias diferentes)' },
+  b2001:{ insta:'nebg.aauav',    brinde:false, devNotes:'Não tenho o menu de shots nem brindes publicados' },
+  b2003:{ insta:'nae.esan.aauav', brinde:false, devNotes:'Não tenho o menu de shots nem brindes publicados\nÉ igual à barraca do ano passado' },
+  b2004:{ insta:'barraca_de_economia',    brinde:false, devNotes:'Não tem menu de shots' },
+  b2006:{ insta:'barracaei',     brinde:false, devNotes:'Tem brindes giros mas é por sorte' },
+  b2103:{ insta:'barraca_cm_',    brinde:false, devNotes:'' },
+  b2104:{ insta:'nemataauav',   brinde:false, devNotes:'O menu de shots tem misturado as bebidas brancas' },
+  b2301:{ insta:'barraca_nemocnegeo',brinde:false,devNotes:'TEM UM FATO PINGUIM\nUma das melhoras barracas' },
+  b2401:{ insta:'barraca_materiais',     brinde:false, devNotes:'Não tem menu de shots nem brindes publicados\nPerdeste o Jogo' },
+  b2306:{ insta:'barraca.nellc',   brinde:false, devNotes:'' },
+  b2406:{ insta:'neee.aauav',    brinde:false, devNotes:'' },
+  b2601:{ insta:'barraca.naeestga', brinde:false, devNotes:'' },
+  b2606:{ insta:'barraca_tua',     brinde:false, devNotes:'Não tem brindes nem menu de shots publicados' },
+  b2701:{ insta:'nemu.aauav', brinde:false, devNotes:'Não tem brindes publicados' },
+};
+// ─────────────────────────────────────────────────────────────────────────────
+
+const BARRACAS=[
+  {id:'b301',name:'NEMTC',sub:'Na cama com o Vagabundo (Multimédias)',shots:['Dama Safada','Shot Chupa','Noite Gregada','Vagabundo de Lei','Tou de Trela','Põe o Açaime','Cão Rafeiro','Até Ladras','Cão de Colo']},
+  {id:'b306',name:'NEBEC',sub:'Obras Púb(l)icas (Engenharia Civil)',shots:['Racha Betonada','Tijolo no Cu','Shotà Trolha','Martelação','Pintelho','Pirilampo','Argamassa Especial','Capacete','Partes Púbicas']},
+  {id:'b401',name:'NED',sub:'SWAG (Design)',shots:['Unicórnio','Design','Bigode','Starbucks','KeepCalm','Yolo','Éder','Swag','Pokémon_Go','LOL']},
+  {id:'b406',name:'NAE-ISCA',sub:'Iscaliente (ISCA)',shots:['Tentacion','Taco Dentro, Taco Fora','Leche en La Cara','El Papi','Chupa e Cala','Madremia','Puro Fuego']},
+  {id:'b701',name:'NELRE',sub:'Las Vergas (Línguas e Relações Empresariais)',shots:['Grand Verga','Jack-pot','Micro Pau','Blackout','Casados de Fresco (2)','Vergonha na Cara','BBC','Facial','Surpresa']},
+  {id:'b706',name:'NEEB',sub:'Algemada (Educação Básica)',shots:['Sirenada','Algem\'aí','PjHotty','Sabor a Pecado','Shot EB']},
+  {id:'b801',name:'NEEQU',sub:'??? (Engenharia Química)',shots:['Tudo o que vem à rede é peixe','Mata-Ratas','Minhocona','Leite de Bacalhau','Punheta de Bacalhau','Rabo de Peixe','Peixaxa']},
+  {id:'b806',name:'NEEETA',sub:'GTA - Grand Theft Álcool (Eng. Eletrónica e Telecomunicações)',shots:['']},
+  {id:'b1101',name:'NAE-ESSUA',sub:'ESSUA-Saúde',shots:['']},
+  {id:'b1106',name:'AEGIA',sub:'Engenharia e Gestão Industrial',shots:['Pilota','Pierre Ganzly','Esteban Ocona','Lando No Rizz','Cock-Pito','Oscar Pinastri','Ayrton Senta','Hamiltesão','Foderrari']},
+  {id:'b1201',name:'NEECT',sub:'Caceteiro Paulo (Eng. de Computadores e Telemática)',shots:['']},
+  {id:'b1203',name:'NEAP',sub:'Food Eat (Administração Pública)',shots:['Leitada','Hot-Quecas','Brioche','Abananado','X Tudo','Tele-Pissa','Burguer Kiss']},
+  {id:'b1204',name:'NECIB',sub:'Air Action (Ciências Biomédicas)',shots:['Agarra-te bem','Piloto Pilota','Jato Privado','Nas nuvens','Cockpit','Hard Landing','AirGasm','Press for Service']},
+  {id:'b1206',name:'NEG',sub:'Homi-Arranha(Gestão)',shots:['']},
+  {id:'b1303',name:'NEEA',sub:'Tinder Bueno (Engenharia do Ambiente)',shots:['One Night Stand','Pick Me','Ménage à Trois','Cupid','Blind Date','It´s a Match','Tinder Bueno']},
+  {id:'b1304',name:'NEEF',sub:'Cock in Rio (Engenharia Física)',shots:['C*ck in Rio','Hard C*ock','Blackout','S*x on the Stage','Br*che Pit']},
+  {id:'b1501',name:'NEEMEC',sub:'Engenharia Mecânica',shots:['Saboour','Mount Bull','Pit Stop','Red Flag','Bad sTRIP','Ganda Senna','Smooth Operator']},
+  {id:'b1506',name:'NROCK',sub:'27 anos ainda sem casa CLUB (NROCK)',shots:['Kurt Co-Pain','Mimi Hendrix','Amy Why-No-House','Back To Your Parents House','Rock in Ria','Este Mata-te Aos 27','Never House','700 Paus a Renda','Morte à Guitarrada','Debaixo da Ponte','Jimi-Morre-Son']},
+  {id:'b1601',name:'NEGPT',sub:'SpongeBoobies(Gestão e Planeamento em Turismo)',shots:['Chupa-me na Fenda','Esguicho do Plankton','Bico da Sandy','Gaita do Molusco','O Mexilhão Aberto','O Molho Secreto']},
+  {id:'b1606',name:'NEQ',sub:'QUEM QUER (M)AMAR O AGRICULTOR? (Engenharia Química)',shots:['Pito Ensopado','Mamadela','Rega-me o Rego','Tomatada','Ordenha-me','Adubo Potente','Colheita Fresca','Coice','Chocalha-mos']},
+  {id:'b1901',name:'NEB',sub:'Gato das Bolas (Biologia)',shots:['Piróquio','Foda Madriinha','Robin dos Broches','Pau Encantado','Dracona','Homem (bis)Coito','Ratas Cegas','FarCkock','Shereka']},
+  {id:'b1906',name:'NEP',sub:'Hannah Montada (Psicologia)',shots:['Montana Hannah','Chiça Penico','Uhh Tsss','Yeehaww','Montana no Jetsky','OoOoh yEaaH','Daddy Cyrus','The Climb']},
+  {id:'b2001',name:'NEBG',sub:'??? (Biologia e Geologia)',shots:['']},
+  {id:'b2003',name:'NAE-ESAN',sub:'PillaBong (ESAN-Design, Gestão e Tecnologias da Produção)',shots:['']},
+  {id:'b2004',name:'NEEC',sub:'Teleboobies (Economia)',shots:['']},
+  {id:'b2006',name:'NEI',sub:'𝙃𝙖𝙧𝙧𝙮 𝙋𝙤𝙩𝙃𝙚𝙖𝙙 (Informática)',shots:['Hottie Potter','MandaDroga','VodeMoca','Aurus Maximus','Snorting Hat','HighwartSexpress','Avara Kebrada','Erecto']},
+  {id:'b2103',name:'NECM',sub:'Spread Her Things (Ciências do Mar)',shots:['Red Thirst','Deep Upside','Raw Vecna','Mind Lick','Wet Eleven','Bite Me Demo','Spread Her Things']},
+  {id:'b2104',name:'NEMAT',sub:'Operação Shot (Matemática)',shots:['Sopra Aqui','À Paisana','Mãos ao Ar','Passenger Princess','Oh Nooo La Polizia','Ihoihoihoi','911']},
+  {id:'b2301',name:'NEMOC/NEGEO',sub:'HOLY MADAGASBAR (Meteorologia, Oceanografia e Clima/Geologia)',shots:['Kaboom','Wild Lick','Move It','Afro Circus','Best Mode','Coco Locco']},
+  {id:'b2401',name:'NEM',sub:'GATES of MATERIALS 1000 (Materiais)',shots:['']},
+  {id:'b2306',name:'NELLC',sub:'HotFeels (Línguas, Literaturas e Culturas)',shots:['Gasolina Premium','O AOS 1000','Nitro Shot','No Brakes','Faísca Fatal','Hard Turn']},
+  {id:'b2406',name:'NEEE',sub:'Only FRIENDS (Engenharia Química)',shots:['The Ross','The Joey','The Chandler','The Monica','The Rachel','The Phoebe']},
+  {id:'b2601',name:'NAE-ESTGA',sub:'A Racha da Rosinha (Tecnologia e Gestão de Águeda)',shots:['Vai a Racha','Abananada','Eu Chupo','Se Pedes Eu Dou','Molho o Bico','Deixa-me Ama-la']},
+  {id:'b2606',name:'TUA',sub:'(Tuna)',shots:['']},
+  {id:'b2701',name:'NEMU/NET',sub:'(Música/Tradução)',shots:['Pour it Up','Single Ladies','Blackout Lights','Smooth Criminal','Tití Me Pergunto','Shot Puro','HalfTime Special']},
+];
+
+const BARRACA_MAP=Object.fromEntries(BARRACAS.map(b=>[b.id,b]));
+const PHOTO_FILES=[
+  'brindes_naeestga1.png','brindes_naeestga2.png','brindes_nae-isca1.png','brindes_neap1.png','brindes_neap2.png','brindes_neap3.png','brindes_neap4.png',
+  'brindes_neb1.png','brindes_nebec1.png','brindes_necib1.png','brindes_necib2.png','brindes_necm1.png','brindes_ned1.png','brindes_ned2.png','brindes_ned3.png',
+  'brindes_ned4.png','brindes_ned5.png','brindes_ned6.png','brindes_neea1.png','brindes_neea2.png','brindes_neeb1.png','brindes_neec.png','brindes_neee1.png',
+  'brindes_neee2.png','brindes_neeeta1.png','brindes_neeeta2.png','brindes_neeeta3.png','brindes_neeeta4.png','brindes_neef1.png','brindes_neef2.png',
+  'brindes_neemec1.png','brindes_neemec2.png','brindes_neemec3.png','brindes_neequ1.png','brindes_neg1.png','brindes_neg10.png','brindes_neg11.png',
+  'brindes_neg12.png','brindes_neg13.png','brindes_neg2.png','brindes_neg3.png','brindes_neg4.png','brindes_neg5.png','brindes_neg6.png','brindes_neg7.png',
+  'brindes_neg8.png','brindes_neg9.png','brindes_negpt1.png','brindes_nei1.png','brindes_nei2.png','brindes_nei3.png','brindes_nellc1.png','brindes_nelre1.png',
+  'brindes_nemat1.png','brindes_nemoc_negeo1.png','brindes_nemoc_negeo2.png','brindes_nemoc_negeo3.png','brindes_nep1.png','brindes_nep2.png','brindes_nep3.png',
+  'brindes_nep4.png','brindes_nep5.png','brindes_nep6.png','brindes_neq1.png','brindes_nrock1.png','shots_aegia1.png','shots_naeestga1.png','shots_nae-isca1.png',
+  'shots_neap1.png','shots_neb1.png','shots_neb2.png','shots_neb3.png','shots_neb4.png','shots_neb5.png','shots_neb6.png','shots_neb7.png','shots_neb8.png',
+  'shots_neb9.png','shots_nebec1.png','shots_necib1.png','shots_necib2.png','shots_necm1.png','shots_ned1.png','shots_ned2.png','shots_neea1.png','shots_neeb1.png',
+  'shots_neee1.png','shots_neef1.png','shots_neemec1.png','shots_neemec2.png','shots_neequ1.png','shots_neequ2.png','shots_negpt1.png','shots_nei1.png',
+  'shots_nei2.png','shots_nellc1.png','shots_nelre1.png','shots_nelre2.png','shots_nemat1.png','shots_nemoc_negeo1.png','shots_nemoc_negeo2.png','shots_nemu_net1.png',
+  'shots_nep1.png','shots_nep2.png','shots_neq1.png','shots_nrock1.png','shots_nrock2.png'
+];
+const PHOTO_KEYS_BY_BARRACA={
+  b306:['nebec'],
+  b401:['ned'],
+  b406:['nae-isca'],
+  b701:['nelre'],
+  b706:['neeb'],
+  b801:['neequ'],
+  b806:['neeeta'],
+  b1106:['aegia'],
+  b1203:['neap'],
+  b1204:['necib'],
+  b1206:['neg'],
+  b1303:['neea'],
+  b1304:['neef'],
+  b1501:['neemec'],
+  b1506:['nrock'],
+  b1601:['negpt'],
+  b1606:['neq'],
+  b1901:['neb'],
+  b1906:['nep'],
+  b2004:['neec'],
+  b2006:['nei'],
+  b2103:['necm'],
+  b2104:['nemat'],
+  b2301:['nemoc_negeo'],
+  b2306:['nellc'],
+  b2406:['neee'],
+  b2601:['naeestga'],
+  b2701:['nemu_net']
+};
+const FILTERS=[{id:'all',label:'Todas'},{id:'notes',label:'Notas'},{id:'shots',label:'Shots'},{id:'both',label:'Ambas'}];
+const REMOVED_ROWS=[5,9,14,17,22];
+const rowMap=row=>row-REMOVED_ROWS.filter(r=>r<row).length;
+
+const GRID_ITEMS=[
+  {type:'stage',label:'PALCO',row:1,col:1,colSpan:6},
+  {type:'barraca',id:'b301',row:3,col:1},{type:'barraca',id:'b306',row:3,col:6},
+  {type:'barraca',id:'b401',row:4,col:1},{type:'barraca',id:'b406',row:4,col:6},
+  {type:'barraca',id:'b701',row:7,col:1},{type:'barraca',id:'b801',row:8,col:1},
+  {type:'backstage',label:'REGUA / BACKSTAGE',row:7,col:3,rowSpan:2,colSpan:2},
+  {type:'barraca',id:'b706',row:7,col:6},{type:'barraca',id:'b806',row:8,col:6},
+  {type:'barraca',id:'b1101',row:11,col:1},{type:'barraca',id:'b1106',row:11,col:6},
+  {type:'barraca',id:'b1201',row:12,col:1},{type:'barraca',id:'b1203',row:12,col:3},
+  {type:'barraca',id:'b1204',row:12,col:4},{type:'barraca',id:'b1206',row:12,col:6},
+  {type:'barraca',id:'b1303',row:13,col:3},{type:'barraca',id:'b1304',row:13,col:4},
+  {type:'barraca',id:'b1501',row:15,col:1},{type:'barraca',id:'b1506',row:15,col:6},
+  {type:'barraca',id:'b1601',row:16,col:1},{type:'barraca',id:'b1606',row:16,col:6},
+  {type:'barraca',id:'b1901',row:19,col:1},{type:'barraca',id:'b1906',row:19,col:6},
+  {type:'barraca',id:'b2001',row:20,col:1},{type:'barraca',id:'b2003',row:20,col:3},
+  {type:'barraca',id:'b2004',row:20,col:4},{type:'barraca',id:'b2006',row:20,col:6},
+  {type:'barraca',id:'b2103',row:21,col:3},{type:'barraca',id:'b2104',row:21,col:4},
+  {type:'barraca',id:'b2301',row:23,col:1},{type:'barraca',id:'b2401',row:24,col:1},
+  {type:'barraca',id:'b2306',row:23,col:6},{type:'barraca',id:'b2406',row:24,col:6},
+  {type:'barraca',id:'b2601',row:26,col:1},{type:'barraca',id:'b2606',row:26,col:6},
+  {type:'barraca',id:'b2701',row:27,col:1},{type:'posto',label:'POSTO MEDICO / SEGURANCA',row:27,col:3,colSpan:2},
+].map(item=>({...item,row:rowMap(item.row)}));
+
+const PASSAGE_ROWS=new Set([2,10,13,18,21,25].map(rowMap));
+const GRID_ROWS=27-REMOVED_ROWS.length;
+const CORRIDOR_START_ROW=2,CORRIDOR_END_ROW=GRID_ROWS;
+
+const BEBIDAS_CATS=[
+  {id:'finos',name:'Finos',icon:'🍻',sub:'Imperiais & canecas',items:['Fino','Fino Minado']},
+  {id:'sidras',name:'Sidras',icon:'🍏',sub:'Sidras & ciders',items:['Sidra','Sidra Minada']},
+  {id:'agua',name:'Outras bebidas',icon:'💧',sub:'Não alcoólicas',items:['Água','Sumo','Red Bull']},
+  {id:'comida',name:'Comida',icon:'🍔',sub:'Comida',items:['Tripa','Pão Com Chouriço','Kebab']},
+];
+
+function ls(){try{return JSON.parse(localStorage.getItem('enterro26')||'{}')}catch{return{}}}
+function ss(s){localStorage.setItem('enterro26',JSON.stringify(s))}
+function gs(){return window._st||(window._st=ls())}
+function mapFilter(){return window._mapFilter||'all'}
+function setMapFilter(v){window._mapFilter=v;buildFilters();buildMap();}
+
+function initB(id,shots){
+  const s=gs();
+  if(!s[id]){s[id]={shots:shots.map(n=>({name:n,count:0})),ps:[null,null],pb:[null,null,null],notes:''};}
+  else{
+    if(s[id].shots.length===shots.length){s[id].shots.forEach((sh,i)=>sh.name=shots[i]);}
+    else{s[id].shots=shots.map((name,i)=>({name,count:s[id].shots[i]?s[id].shots[i].count:0}));}
+    if(typeof s[id].notes!=='string')s[id].notes='';
+  }
+  ss(s);return s[id];
+}
+function initBeb(id,items){
+  const s=gs();const k='beb_'+id;
+  if(!s[k]){s[k]={items:items.map(n=>({name:n,count:0}))};}
+  else{
+    if(s[k].items.length===items.length){s[k].items.forEach((it,i)=>it.name=items[i]);}
+    else{s[k].items=items.map((name,i)=>({name,count:s[k].items[i]?s[k].items[i].count:0}));}
+  }
+  ss(s);return s[k];
+}
+
+function totalForB(bid){const s=gs();if(!s[bid])return 0;return s[bid].shots.reduce((a,sh)=>a+sh.count,0);}
+function totalBeb(id){const s=gs();const k='beb_'+id;if(!s[k])return 0;return s[k].items.reduce((a,i)=>a+i.count,0);}
+function globalTotal(){return BARRACAS.reduce((a,b)=>a+totalForB(b.id),0);}
+function cfg(bid){return BARRACA_CONFIG[bid]||{insta:'',brinde:false,devNotes:''};}
+function photoFileOrder(name){
+  const m=name.match(/(\d+)(?=\.[^.]+$)/);
+  return m?parseInt(m[1],10):0;
+}
+function escapeRe(str){return str.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
+function safeText(str){
+  return String(str||'')
+    .replace(/Ã¡|Ã |Ã¢|Ã£|Ã¤/g,'a')
+    .replace(/Ã�|Ã€|Ã‚|Ãƒ|Ã„/g,'A')
+    .replace(/Ã©|Ã¨|Ãª|Ã«/g,'e')
+    .replace(/Ã‰|Ãˆ|ÃŠ|Ã‹/g,'E')
+    .replace(/Ã­|Ã¬|Ã®|Ã¯/g,'i')
+    .replace(/Ã�|ÃŒ|ÃŽ|Ã�/g,'I')
+    .replace(/Ã³|Ã²|Ã´|Ãµ|Ã¶/g,'o')
+    .replace(/Ã“|Ã’|Ã”|Ã•|Ã–/g,'O')
+    .replace(/Ãº|Ã¹|Ã»|Ã¼/g,'u')
+    .replace(/Ãš|Ã™|Ã›|Ãœ/g,'U')
+    .replace(/Ã§/g,'c')
+    .replace(/Ã‡/g,'C')
+    .replace(/â€”|—/g,'-')
+    .replace(/â€¹|‹/g,'<')
+    .replace(/â€º|›/g,'>')
+    .replace(/â†—|↗/g,'->')
+    .replace(/âœ“|✓/g,'OK')
+    .replace(/âœ—|✗/g,'X')
+    .replace(/Â/g,'');
+}
+function catIcon(name){
+  const words=safeText(name).split(/\s+/).filter(Boolean);
+  return (words[0]?.[0]||'O')+(words[1]?.[0]||words[0]?.[1]||'B');
+}
+function normalizeTextNodes(root){
+  if(!root)return;
+  const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
+  const nodes=[];
+  while(walker.nextNode())nodes.push(walker.currentNode);
+  nodes.forEach(node=>{node.nodeValue=safeText(node.nodeValue);});
+}
+function matchesPhotoKey(name,prefix,key){
+  return new RegExp('^'+escapeRe(prefix)+escapeRe(key)+'\\d*\\.[^.]+$').test(name);
+}
+function photoSrc(name){
+  try{return new URL('fotos/'+name,window.location.href).href;}
+  catch{return 'fotos/'+name;}
+}
+function photosFor(bid,type){
+  const prefix=type==='shots'?'shots_':'brindes_';
+  const keys=PHOTO_KEYS_BY_BARRACA[bid]||[];
+  return PHOTO_FILES
+    .filter(name=>keys.some(key=>matchesPhotoKey(name,prefix,key)))
+    .sort((a,b)=>photoFileOrder(a)-photoFileOrder(b) || a.localeCompare(b))
+    .map(name=>photoSrc(name));
+}
+
+function updateGlobal(){
+  const t=globalTotal();
+  document.getElementById('g-shots').textContent=t+' shot'+(t!==1?'s':'');
+}
+
+function mkSlot(b){
+  const t=totalForB(b.id);
+  const data=gs()[b.id]||{};
+  const hasNotes=Boolean((data.notes||'').trim());
+  const match=matchesFilter(b.id);
+  const brinde=cfg(b.id).brinde;
+  const d=document.createElement('div');
+  d.className='bslot'+(t>0?' has-shots':'')+(match?'':' is-dim');
+  d.id='slot-'+b.id;d.onclick=()=>openModal(b.id);
+  const short=b.name.replace('Barraca ','B ');
+  d.innerHTML=
+    (hasNotes?'<div class="note-dot"></div>':'')+
+    (t>0?'<div class="dot"></div>':'')+
+    (brinde?'<div class="brinde-dot"></div>':'')+
+    '<div class="scount">'+(t>0?t:'')+'</div>'+
+    '<div style="font-size:8px;line-height:1.2;margin-top:2px">'+short+'</div>';
+  return d;
+}
+
+function matchesFilter(bid){
+  const data=gs()[bid]||{};
+  const hasNotes=Boolean((data.notes||'').trim());
+  const hasShots=totalForB(bid)>0;
+  const filter=mapFilter();
+  if(filter==='notes')return hasNotes;
+  if(filter==='shots')return hasShots;
+  if(filter==='both')return hasNotes&&hasShots;
+  return true;
+}
+
+function buildFilters(){
+  const wrap=document.getElementById('map-filters');if(!wrap)return;wrap.innerHTML='';
+  FILTERS.forEach(f=>{
+    const btn=document.createElement('button');
+    btn.className='filter-btn'+(mapFilter()===f.id?' active':'');
+    btn.type='button';btn.textContent=f.label;btn.onclick=()=>setMapFilter(f.id);
+    wrap.appendChild(btn);
+  });
+}
+
+function buildMap(){
+  BARRACAS.forEach(b=>initB(b.id,b.shots));
+  const grid=document.getElementById('map-grid');grid.innerHTML='';
+  const occupied=new Set();
+  const corridorSpan=CORRIDOR_END_ROW-CORRIDOR_START_ROW+1;
+  for(let r=CORRIDOR_START_ROW;r<=CORRIDOR_END_ROW;r++){occupied.add(r+'-2');occupied.add(r+'-5');}
+  GRID_ITEMS.forEach(item=>{
+    for(let r=item.row;r<item.row+(item.rowSpan||1);r++)
+      for(let c=item.col;c<item.col+(item.colSpan||1);c++)occupied.add(r+'-'+c);
+  });
+  [2,5].forEach(col=>{
+    const el=document.createElement('div');el.className='grid-corridor';
+    el.style.gridRow=CORRIDOR_START_ROW+' / span '+corridorSpan;el.style.gridColumn=String(col);
+    grid.appendChild(el);
+  });
+  for(let row=1;row<=GRID_ROWS;row++){
+    for(let col=1;col<=6;col++){
+      if(occupied.has(row+'-'+col))continue;
+      const f=document.createElement('div');
+      f.className=PASSAGE_ROWS.has(row)?'grid-space':'grid-empty';
+      f.style.gridRow=String(row);f.style.gridColumn=String(col);grid.appendChild(f);
+    }
+  }
+  GRID_ITEMS.forEach(item=>{
+    let el;
+    if(item.type==='barraca'){el=mkSlot(BARRACA_MAP[item.id]);}
+    else{el=document.createElement('div');el.className='grid-block '+item.type;el.textContent=item.label;}
+    el.style.gridRow=item.row+' / span '+(item.rowSpan||1);
+    el.style.gridColumn=item.col+' / span '+(item.colSpan||1);
+    grid.appendChild(el);
+  });
+}
+
+function openModal(bid){
+  const b=BARRACAS.find(x=>x.id===bid);
+  const data=gs()[bid];
+  const c=cfg(bid);
+  window._currentBarraca=bid;
+  document.getElementById('m-title').textContent=safeText(b.name);
+  document.getElementById('m-sub').textContent=safeText(b.sub);
+  const body=document.getElementById('m-body');
+  body.innerHTML='';
+
+  renderModalNav(bid);
+
+  // 1. FOTOS DOS SHOTS
+  const shotsPhotos=photosFor(bid,'shots');
+  const s1=document.createElement('div');
+  s1.innerHTML='<div class="sec-label">Fotos dos Shots</div><div class="photos-row" id="pshots-'+bid+'">'+
+    photoGalleryHTML('shots-'+bid,shotsPhotos,'Sem fotos de shots disponíveis.')+'</div>';
+  body.appendChild(s1);
+  initPhotoCarousel('shots-'+bid,shotsPhotos);
+
+  // 2. FOTOS DOS BRINDES
+  const brindesPhotos=photosFor(bid,'brindes');
+  const s2=document.createElement('div');
+  s2.innerHTML='<div class="sec-label">Fotos dos Brindes</div><div class="photos-row" id="pbrindes-'+bid+'">'+
+    photoGalleryHTML('brindes-'+bid,brindesPhotos,'Sem fotos de brindes disponíveis.')+'</div>';
+  body.appendChild(s2);
+  initPhotoCarousel('brindes-'+bid,brindesPhotos);
+
+  // 3. CONTADOR DE SHOTS
+  const s3=document.createElement('div');
+  s3.innerHTML='<div class="sec-label">Contador de Shots</div><div id="shots-list-'+bid+'">'+
+    data.shots.map((sh,i)=>shotRowHTML(bid,i,sh)).join('')+'</div>';
+  body.appendChild(s3);
+
+  // 4. TOTAL DE SHOTS
+  const totalAtual=data.shots.reduce((a,s)=>a+s.count,0);
+  const s4=document.createElement('div');
+  s4.style.marginTop='10px';
+  s4.innerHTML='<div class="total-block"><div><div class="lbl">Total nesta barraca</div></div>'+
+    '<div style="display:flex;align-items:center;gap:12px">'+
+    '<div class="num" id="ct-'+bid+'">'+totalAtual+'</div>'+
+    '<button class="rst-btn" onclick="rstCard(\''+bid+'\')">resetar</button></div></div>';
+  body.appendChild(s4);
+
+  // 5. INSTAGRAM DA BARRACA — definido pelo programador em BARRACA_CONFIG
+  // Para alterar o link de uma barraca vai a BARRACA_CONFIG e muda o campo `insta`
+  const handle=c.insta||'';
+  const s5=document.createElement('div');
+  // O href do link é construído a partir do handle: https://instagram.com/{handle}
+  // Para apontar para uma página diferente, muda o `insta` em BARRACA_CONFIG
+  s5.innerHTML='<div class="sec-label">Instagram</div>'+
+    '<div class="insta-block">'+
+    '<span class="insta-handle">@'+handle+'</span>'+
+    '<a class="insta-link" href="https://instagram.com/'+handle+'" target="_blank">Ver no Instagram ↗</a>'+
+    '</div>';
+  body.appendChild(s5);
+
+  // 6. CARTÃO DE BRINDES — definido pelo programador em BARRACA_CONFIG (brinde: true/false)
+  const temBrinde=c.brinde===true;
+  const s6=document.createElement('div');
+  s6.innerHTML='<div class="sec-label">Cartão de Brindes</div>'+
+    '<div class="brinde-row">'+
+    '<div class="brinde-info"><div class="brinde-label">Esta barraca tem cartão?</div>'+
+    '<div class="brinde-desc"></div></div>'+
+    '<div class="brinde-badge '+(temBrinde?'yes':'no')+'">'+(temBrinde?'✓ Tem cartão':'✗ Sem cartão (chulos...)')+'</div>'+
+    '</div>';
+  body.appendChild(s6);
+
+  // 7. NOTAS DO PROGRAMADOR — definido em BARRACA_CONFIG (devNotes: '...')
+  // Se estiver vazia (''), esta secção não aparece
+  // Para adicionar notas a uma barraca, edita o campo `devNotes` em BARRACA_CONFIG
+  if(c.devNotes&&c.devNotes.trim()){
+    const s7=document.createElement('div');
+    s7.innerHTML='<div class="sec-label">Notas do Dev</div>'+
+      '<div class="dev-notes-block">'+escapeHtml(safeText(c.devNotes))+'</div>';
+    body.appendChild(s7);
+  }
+
+  // 8. NOTAS DO UTILIZADOR — guardadas no localStorage
+  const s8=document.createElement('div');
+  s8.innerHTML='<div class="sec-label">As Minhas Notas</div>'+
+    '<textarea class="notes-input" id="bn-'+bid+'" placeholder="Ex.: brinde conseguido, podes regatear, da próxima vez que for não pago...">'+(data.notes||'')+'</textarea>'+
+    '<div class="notes-meta">Guardado automaticamente.</div>';
+  body.appendChild(s8);
+  document.getElementById('bn-'+bid).addEventListener('input',e=>{
+    const st=gs();if(!st[bid])return;st[bid].notes=e.target.value;ss(st);
+  });
+
+  normalizeTextNodes(document.getElementById('modal'));
+  document.body.classList.add('modal-open');
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function barracaIndex(bid){return BARRACAS.findIndex(b=>b.id===bid)}
+function adjacentBarraca(bid,delta){
+  const idx=barracaIndex(bid);
+  if(idx<0)return null;
+  return BARRACAS[(idx+delta+BARRACAS.length)%BARRACAS.length];
+}
+function renderModalNav(bid){
+  const modal=document.getElementById('modal');
+  const old=document.getElementById('modal-nav');
+  if(old)old.remove();
+  const prev=adjacentBarraca(bid,-1);
+  const next=adjacentBarraca(bid,1);
+  const nav=document.createElement('div');
+  nav.className='modal-nav';
+  nav.id='modal-nav';
+  nav.innerHTML=
+    '<button class="modal-nav-btn" type="button" onclick="jumpBarraca(-1)">‹ '+prev.name+'</button>'+
+    '<div class="modal-nav-center">'+(barracaIndex(bid)+1)+' / '+BARRACAS.length+'</div>'+
+    '<button class="modal-nav-btn" type="button" onclick="jumpBarraca(1)">'+next.name+' ›</button>';
+  const body=document.getElementById('m-body');
+  modal.insertBefore(nav,body);
+}
+function jumpBarraca(delta){
+  if(!window._currentBarraca)return;
+  const next=adjacentBarraca(window._currentBarraca,delta);
+  if(next)openModal(next.id);
+}
+
+function escapeHtml(str){
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function photoGalleryHTML(id,items,emptyText){
+  if(!items.length)return'<div class="photo-empty">'+emptyText+'</div>';
+  return '<div class="photo-carousel" id="carousel-'+id+'">'+
+    '<div class="photo-stage">'+
+    '<button class="photo-nav prev" type="button" onclick="mvPhotoCarousel(\''+id+'\',-1)" aria-label="Foto anterior">‹</button>'+
+    '<img id="carousel-img-'+id+'" src="" alt="Foto da barraca">'+
+    '<button class="photo-nav next" type="button" onclick="mvPhotoCarousel(\''+id+'\',1)" aria-label="Foto seguinte">›</button>'+
+    '</div>'+
+    '<div class="photo-strip">'+
+      '<div class="photo-counter" id="carousel-count-'+id+'"></div>'+
+      '<div class="photo-dots" id="carousel-dots-'+id+'"></div>'+
+    '</div>'+
+  '</div>';
+}
+function initPhotoCarousel(id,items){
+  if(!items.length)return;
+  window._photoCarousels=window._photoCarousels||{};
+  window._photoCarousels[id]={items,idx:0};
+  renderPhotoCarousel(id);
+}
+function mvPhotoCarousel(id,delta){
+  const state=window._photoCarousels&&window._photoCarousels[id];
+  if(!state)return;
+  state.idx=(state.idx+delta+state.items.length)%state.items.length;
+  renderPhotoCarousel(id);
+}
+function goPhotoCarousel(id,idx){
+  const state=window._photoCarousels&&window._photoCarousels[id];
+  if(!state)return;
+  state.idx=idx;
+  renderPhotoCarousel(id);
+}
+function renderPhotoCarousel(id){
+  const state=window._photoCarousels&&window._photoCarousels[id];
+  if(!state||!state.items.length)return;
+  const img=document.getElementById('carousel-img-'+id);
+  const count=document.getElementById('carousel-count-'+id);
+  const dots=document.getElementById('carousel-dots-'+id);
+  if(!img||!count||!dots)return;
+  img.loading='eager';
+  img.decoding='async';
+  img.alt='Foto da barraca';
+  img.onerror=()=>{
+    const bad=state.items[state.idx];
+    console.warn('Falha a carregar imagem:',bad);
+    img.onerror=null;
+    img.src='';
+    const wrap=img.closest('.photo-carousel');
+    if(wrap){
+      wrap.innerHTML='<div class="photo-empty">Nao foi possivel abrir esta foto no telemovel.</div>';
+    }
+  };
+  img.src=state.items[state.idx];
+  count.textContent=(state.idx+1)+' / '+state.items.length;
+  dots.innerHTML=state.items.map((_,i)=>'<button class="photo-dot'+(i===state.idx?' active':'')+'" type="button" onclick="goPhotoCarousel(\''+id+'\','+i+')" aria-label="Ir para foto '+(i+1)+'"></button>').join('');
+}
+function shotRowHTML(bid,idx,sh){
+  return'<div class="shot-row"><div class="shot-name">'+sh.name+'</div>'+
+    '<button class="cbtn m" onclick="chSh(\''+bid+'\','+idx+',-1)">-</button>'+
+    '<div class="shot-cnt" id="sc-'+bid+'-'+idx+'">'+sh.count+'</div>'+
+    '<button class="cbtn p" onclick="chSh(\''+bid+'\','+idx+',1)">+</button></div>';
+}
+function chSh(bid,idx,delta){
+  const s=gs();s[bid].shots[idx].count=Math.max(0,s[bid].shots[idx].count+delta);ss(s);
+  const el=document.getElementById('sc-'+bid+'-'+idx);if(el)el.textContent=s[bid].shots[idx].count;
+  const t=s[bid].shots.reduce((a,sh)=>a+sh.count,0);
+  const ct=document.getElementById('ct-'+bid);if(ct)ct.textContent=t;
+  updateSlot(bid);updateGlobal();
+}
+function updateSlot(bid){
+  const old=document.getElementById('slot-'+bid);if(!old)return;
+  old.replaceWith(mkSlot(BARRACA_MAP[bid]));
+}
+function rstCard(bid){
+  if(!confirm('Resetar contagens desta barraca?'))return;
+  const s=gs();s[bid].shots.forEach(sh=>sh.count=0);ss(s);openModal(bid);updateGlobal();
+}
+
+function closeModal(e){if(e.target===document.getElementById('modal-overlay'))closeModalDirect();}
+function closeModalDirect(){
+  document.body.classList.remove('modal-open');
+  document.getElementById('modal-overlay').classList.remove('open');
+  const nav=document.getElementById('modal-nav');
+  if(nav)nav.remove();
+  buildMap();updateGlobal();
+  if(window._currentBarraca){
+    const slot=document.getElementById('slot-'+window._currentBarraca);
+    if(slot)slot.scrollIntoView({block:'center',inline:'nearest',behavior:'smooth'});
+  }
+}
+
+function buildBebidas(){
+  BEBIDAS_CATS.forEach(cat=>initBeb(cat.id,cat.items));
+  const c=document.getElementById('bebidas-content');c.innerHTML='';
+  BEBIDAS_CATS.forEach(cat=>{
+    const data=gs()['beb_'+cat.id];const t=totalBeb(cat.id);
+    const sec=document.createElement('div');sec.className='beb-section';
+    sec.innerHTML='<div class="beb-header"><div class="beb-icon">'+catIcon(cat.name)+'</div><div><div class="beb-title">'+safeText(cat.name)+'</div><div class="beb-sub">'+safeText(cat.sub)+'</div></div></div>'+
+      '<div class="beb-body"><div>'+data.items.map((it,i)=>'<div class="beb-item-row"><div class="beb-item-name">'+it.name+'</div>'+
+      '<button class="cbtn m" onclick="chBeb(\''+cat.id+'\','+i+',-1)">-</button>'+
+      '<div class="beb-item-cnt" id="bc-'+cat.id+'-'+i+'">'+it.count+'</div>'+
+      '<button class="cbtn pg" onclick="chBeb(\''+cat.id+'\','+i+',1)">+</button></div>').join('')+
+      '</div></div><div class="beb-total"><div class="lbl">Total</div><div class="num" id="bt-'+cat.id+'">'+t+'</div></div>';
+    normalizeTextNodes(sec);
+    c.appendChild(sec);
+  });
+}
+function chBeb(catId,idx,delta){
+  const s=gs();const k='beb_'+catId;s[k].items[idx].count=Math.max(0,s[k].items[idx].count+delta);ss(s);
+  const el=document.getElementById('bc-'+catId+'-'+idx);if(el)el.textContent=s[k].items[idx].count;
+  const bt=document.getElementById('bt-'+catId);if(bt)bt.textContent=totalBeb(catId);
+}
+
+function buildSumario(){
+  const c=document.getElementById('sumario-content');c.innerHTML='';
+  const totalShots=globalTotal();
+  const visited=BARRACAS.filter(b=>totalForB(b.id)>0).length;
+  const totalBebs=BEBIDAS_CATS.reduce((a,cat)=>a+totalBeb(cat.id),0);
+  const maxShots=Math.max(...BARRACAS.map(b=>totalForB(b.id)),1);
+  c.innerHTML='<div class="summ-global">'+
+    '<div class="summ-stat"><div class="n">'+totalShots+'</div><div class="l">Shots</div></div>'+
+    '<div class="summ-stat"><div class="n">'+visited+'</div><div class="l">Barracas</div></div>'+
+    '<div class="summ-stat"><div class="n">'+totalBebs+'</div><div class="l">Comida/Outros</div></div></div>';
+  BARRACAS.forEach(b=>{
+    const t=totalForB(b.id);if(t===0)return;
+    const pct=Math.round(t/maxShots*100);
+    const d=document.createElement('div');d.className='summ-barraca';
+    d.innerHTML='<div style="flex:1"><div class="name">'+b.name+'</div>'+
+      '<div class="bar"><div class="bar-fill" style="width:'+pct+'%"></div></div></div>'+
+      '<div class="cnt">'+t+'</div>';
+    c.appendChild(d);
+  });
+  const bebDiv=document.createElement('div');bebDiv.className='summ-beb';
+  let html='<div class="summ-beb-title">Outros</div>';
+  BEBIDAS_CATS.forEach(cat=>{
+    const data=gs()['beb_'+cat.id];if(!data)return;
+    data.items.filter(i=>i.count>0).forEach(i=>{
+      html+='<div class="summ-beb-row"><span>'+i.name+'</span><span>'+i.count+'x</span></div>';
+    });
+  });
+  bebDiv.innerHTML=html;c.appendChild(bebDiv);
+  const rb=document.createElement('button');rb.className='reset-all';rb.textContent='Resetar tudo';
+  rb.onclick=()=>{if(confirm('Resetar tudo?')){window._st={};localStorage.removeItem('enterro26');location.reload();}};
+  c.appendChild(rb);
+}
+
+function switchTab(tab){
+  document.querySelectorAll('.tab').forEach((t,i)=>{
+    t.classList.toggle('active',['mapa','bebidas','sumario'][i]===tab);
+  });
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+tab).classList.add('active');
+  if(tab==='bebidas')buildBebidas();
+  if(tab==='sumario')buildSumario();
+}
+
+BARRACAS.forEach(b=>initB(b.id,b.shots));
+BEBIDAS_CATS.forEach(cat=>initBeb(cat.id,cat.items));
+buildFilters();buildMap();updateGlobal();
+</script>
